@@ -12,10 +12,10 @@ class FenixTwitter:
         self.Main()
 
     def Main(self):
-        consumer_key = 'jaL8cPgN86MiXI0tCLYEzC1xc'
-        consumer_secret = 'okaIFI0m3dayTAk2w2qvjWJYjkNFkXxXzVzU9H9Pfmo47K5PZw'
-        access_token_key = '4177870763-fOib4cgEjTbenGGAI4i3UeziszPiaUIrnSsiN4v'
-        access_token_secret = 'h185EIXJY37Ex7LM5OR9dsrS9XLSV8ehrgRHZb67M5Hpp'
+        consumer_key = 'ZRgXWodHhxDvySQ6hrp9K5LKm'
+        consumer_secret = 'y8Tj7mx3LKsmnoUom5niJKWD4OOk5x7Up5XUUDj1kUjZsoibFx'
+        access_token_key = '841412456769552386-Dcqma3HyLMo0JYRHO82yP6kl5Q5Yknb'
+        access_token_secret = 'OVnwSaKlpLizTp4e3KOfnpCrb93Df7enh2sosGDfJa3q9'
         self.api = TwitterAPI(consumer_key, consumer_secret, access_token_key, access_token_secret)
     
     def Request(self):
@@ -32,7 +32,7 @@ class FenixTwitter:
     def GetTweets(self):
         r = ''
         try:
-            r = self.api.request('search/tweets', {'q':'#VivaTech', 'count':'200'})
+            r = self.api.request('search/tweets', {'q':'#ShowHello', 'count':'200'})
         except Exception as e:
            time.sleep(1)
            print("failed")
@@ -46,7 +46,7 @@ class FenixTwitter:
                 try:
                     for media in item['entities']['media']:                    
                         self.media_url.append(media['media_url'])
-                except KeyError, e:
+                except KeyError as e:
                     e = e
                 
                 tweets.append(item['text'])

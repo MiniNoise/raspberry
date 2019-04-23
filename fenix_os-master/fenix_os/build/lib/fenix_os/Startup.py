@@ -13,7 +13,7 @@ from stat import S_ISREG, ST_CTIME, ST_MODE
 import threading
 import time
 import sys
-import urllib
+import urllib.request, urllib.error, urllib.parse
 import os
 
 """
@@ -144,10 +144,7 @@ class Startup: # To get linked with the system that communicate directly with th
         #test si connecter wifi, sinon demande de connection
         self.wifi = Wifi()
         while self.wifi.IsConnected() != True:
-            self.w.ClearScreen()
-            self.w.WriteLnString("Waiting 10 sec for wifi..")
-            time.sleep(10)
-        #self.wifi.PrintSsids(self.w)
+            self.wifi.PrintSsids(self.w)
         self.t = FenixTwitter()
         self.ClearImagesFolder()
         #self.TryConnectTwitter()

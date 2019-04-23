@@ -28,26 +28,20 @@ class Wrapper: # To get linked with the system that communicate directly with th
     def __init__(self): # Constructor
         self = self
         
-    def Connect(self):
-        print("1")
+    def Connect(self):  
         self.minitel = Minitel()
-        print("2")
         if (self.minitel.deviner_vitesse() == -1):
-            print("3")
             if (self.minitel.definir_vitesse(300) == False):
                 return (1)
-            print("4")
-        print("5")
         self.minitel.identifier()
-        print("6")
+        while (self.minitel.capacite['nom'] == "Minitel inconnu"):
+            sleep(2)
+            self.minitel.identifier()
+
         self.minitel.definir_mode("VIDEOTEX")
-        print("7")
         print("{} - {}".format(self.minitel.capacite['nom'], self.minitel.capacite['vitesse']))
-        print("8")
         self.minitel.efface()
-        print("9")
         self.minitel.debut_ligne()
-        print("10")
 
     def DisplayImageList(self, file_list):
         largeur = 80
@@ -101,11 +95,9 @@ class Wrapper: # To get linked with the system that communicate directly with th
         self.minitel.envoyer(s_send)
 
     def GetModel(self):
-        print("in getModel")
         return self.minitel.capacite['nom']
 
     def WriteLnString(self, text = ""):
-        print("in write ln string")
         nb_column = 40
         nb_line = 24
         if (self.minitel.capacite['80colonnes'] == True):
@@ -115,14 +107,9 @@ class Wrapper: # To get linked with the system that communicate directly with th
         for i in range(space_to_add):
             text += " "
         text = text[0:nb_column * nb_line]
-        print("after text = ---")
         s_send = Sequence()
-        print("after s_send = sequence")
-        print(text)
         s_send.ajoute(text)
-        print("after s_send.ajoute")
         self.minitel.envoyer(s_send)
-        print("after minitel.envoyer")
 
     def ClearScreen(self):
         self.minitel.efface()

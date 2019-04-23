@@ -5,7 +5,7 @@
 import threading
 import time
 import sys
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 import os
 import json
 import pexpect
@@ -29,7 +29,7 @@ class Wifi:
         return
     def IsConnected(self):
         try:
-            r = urllib2.urlopen('http://216.58.208.238', timeout=10)
+            r = urllib.request.urlopen('http://216.58.208.238', timeout=10)
             return True
         except:
             return False
@@ -56,17 +56,17 @@ class Wifi:
             try:
                 self.GetSsids(m)
                 ssidFound = True
-                print '[+] SSIDs found : ' + str(len(self.ssids))
+                print('[+] SSIDs found : ' + str(len(self.ssids)))
             except Exception as e:
-                print str(e)
+                print(str(e))
                 pass
             tr = tr + 1
         if not ssidFound:
-            print '[-] Any networks found'
+            print('[-] Any networks found')
             return
         y = 5
         for ssid in self.ssids:
-            print '[*] ' + ssid
+            print('[*] ' + ssid)
             m.WriteLnString(str(y - 4) +' ' + ssid)
             y = y + 1
             if y > 15:
@@ -81,10 +81,10 @@ class Wifi:
                 if int(num) == 0:
                     raise 
                 self.ssid = self.ssids[int(num) - 1]
-                print '[+] Network choose : ' + self.ssid
+                print('[+] Network choose : ' + self.ssid)
                 networkChoose = True
             except Exception as e:
-                print '[-] Error : ' + str(e)
+                print('[-] Error : ' + str(e))
                 m.WriteLnString("The network " + num + " is not in list.")
 
     def getPasskey(self, m):
@@ -92,7 +92,7 @@ class Wifi:
         m.WriteLnString("Enter passkey for " + self.ssid + " :")
         m.WriteLnString("Passkey: ")
         self.passkey = m.ReadString()
-        print '[+] Passkey : ' + self.passkey
+        print('[+] Passkey : ' + self.passkey)
 
     def Connexion(self, m):
         tr = 0
@@ -107,21 +107,21 @@ class Wifi:
             else:
                 error = child.after if type(child.after) == str else child.before
                 error = ' : ' + error if type(error) == str else ''
-                print '[-] Error no' + str(tr + 1) + error[:-1]
+                print('[-] Error no' + str(tr + 1) + error[:-1])
             tr = tr + 1
             time.sleep(1)
         if not self.connected:
-            print '[-] Connexion failed'
+            print('[-] Connexion failed')
             m.ClearScreen()
             m.WriteLnString("Connexion failed")
             return False
         child.sendline(self.passkey)
         ret = child.expect([pexpect.TIMEOUT, r'\s*$', pexpect.EOF])
         if ret == 1:
-            print '[+] Connexion successed'
+            print('[+] Connexion successed')
             return True
         else:
-            print '[-] Error : ' + str(child.after)
+            print('[-] Error : ' + str(child.after))
         return False
 
 

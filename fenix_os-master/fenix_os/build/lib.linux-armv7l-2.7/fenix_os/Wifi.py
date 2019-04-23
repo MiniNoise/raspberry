@@ -1,12 +1,24 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import sys
+# System dependencies
+import threading
 import time
+import sys
+import urllib2
+import os
 import json
 import pexpect
-import urllib2
-from minitel_tools import *
+
+from PIL import Image
+from time import sleep
+from minitel.Minitel import Minitel
+from minitel.Sequence import Sequence
+from minitel.ImageMinitel import ImageMinitel
+from minitel.constantes import (ENVOI, ANNULATION)
+from multiprocessing import Process
+from threading import Thread, Condition
+from stat import S_ISREG, ST_CTIME, ST_MODE
 
 class Wifi:
     def __init__(self):
@@ -23,7 +35,7 @@ class Wifi:
             return False
 
     def GetSsids(self, m):
-        renderText(m, {'x':5,'y':20,'text':'Searching network...'})
+        m.WriteLnString("Searching network...")
         child = pexpect.run('wifi')
         child = child.split('\n')
         first = list()
@@ -42,7 +54,7 @@ class Wifi:
         tr = 0
         while not ssidFound and tr < 10:
             try:
-                self.getSsids(m)
+                self.GetSsids(m)
                 ssidFound = True
                 print '[+] SSIDs found : ' + str(len(self.ssids))
             except Exception as e:
@@ -55,19 +67,16 @@ class Wifi:
         y = 5
         for ssid in self.ssids:
             print '[*] ' + ssid
-            renderText(m, {'x':5,'y':y,'text':str(y - 4)+' '+ssid})
+            m.WriteLnString(str(y - 4) +' ' + ssid)
             y = y + 1
             if y > 15:
                 break
-        renderText(m, {'x':5,'y':20,'text':'Choose your network number'})
+        m.WriteLnString("Choose your network number")
 
     def SelectSsid(self, m):
         networkChoose = False
         while not networkChoose:
-            while True:
-                num = m.recv(1)
-                if num:
-                    break
+            num = m.ReadString()
             try:
                 if int(num) == 0:
                     raise 
@@ -76,18 +85,18 @@ class Wifi:
                 networkChoose = True
             except Exception as e:
                 print '[-] Error : ' + str(e)
-                renderText(m,{'x':5,'y':20,'text':'The network '+num+' is not in list.'})
+                m.WriteLnString("The network " + num + " is not in list.")
 
     def getPasskey(self, m):
         header(m)
-        renderText(m, {'x':5,'y':5,'text':'Enter passkey for '+self.ssid+' :'})
-        renderText(m, {'x':5,'y':7,'text':'Passkey: '})
-        self.passkey = readUntil(m, 'Envoi')
+        m.WriteLnString("Enter passkey for " + self.ssid + " :")
+        m.WriteLnString("Passkey: ")
+        self.passkey = m.ReadString()
         print '[+] Passkey : ' + self.passkey
 
     def Connexion(self, m):
         tr = 0
-        renderText(m,{'x':5,'y':20,'text':'Waiting connexion in process...'})
+        m.WriteLnString("Waiting connexion in process...")
         pexpect.run('sudo ifdown wlan0')
         pexpect.run('sudo ifup wlan0')
         while not self.connected and tr < 5:
@@ -103,8 +112,8 @@ class Wifi:
             time.sleep(1)
         if not self.connected:
             print '[-] Connexion failed'
-            clearLine(m, 20)
-            renderText(m, {'x':5,'y':20,'text':'Connexion failed'})
+            m.ClearScreen()
+            m.WriteLnString("Connexion failed")
             return False
         child.sendline(self.passkey)
         ret = child.expect([pexpect.TIMEOUT, r'\s*$', pexpect.EOF])

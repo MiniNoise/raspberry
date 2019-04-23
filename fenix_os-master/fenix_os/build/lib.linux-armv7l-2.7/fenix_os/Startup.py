@@ -4,6 +4,7 @@
 # Fenix dependencies
 from fenix_os.Wrapper import Wrapper
 from fenix_api.FenixTwitter import FenixTwitter
+from fenix_os.Wifi import Wifi
 
 # System dependencies
 from multiprocessing import Process
@@ -12,7 +13,7 @@ from stat import S_ISREG, ST_CTIME, ST_MODE
 import threading
 import time
 import sys
-import urllib2
+import urllib
 import os
 
 """
@@ -32,6 +33,7 @@ class Startup: # To get linked with the system that communicate directly with th
 
     w = None
     t = None
+    wifi = None
     thread_twitter_get = None
     thread_twitter_send = None
     new_tweet = False # Used to refresh stream with the new tweet that the user entered
@@ -39,10 +41,7 @@ class Startup: # To get linked with the system that communicate directly with th
     writing_tweet = False
     
     def __init__(self): # Constructor
-        print("coucou")
         self.Launch()
-        print("au revoir")
-
 
     def TwitterThreadGetStream(self, cond):
         while True:
@@ -95,7 +94,6 @@ class Startup: # To get linked with the system that communicate directly with th
                     self.w.ClearScreen()
                     self.WriteHeader()
 
-
     def TwitterThreadSendMessage(self, cond):
         msg = str()
         while (True):
@@ -117,16 +115,16 @@ class Startup: # To get linked with the system that communicate directly with th
             self.w.WriteLnString("2. Press 'Envoi' button")
             self.w.WriteLnString("3. There is no 3. step")            
             self.w.WriteLnString()
-            self.w.WriteString("#VivaTech ")
+            self.w.WriteString("#ShowHello ")
 
             # Get user tweet
             self.w.DisplayCursor(True)
             msg = self.w.ReadString()
             if msg is not None:
-                msg = "#VivaTech " + msg
+                msg = "#ShowHello " + msg
                 #answer = self.t.SendTweet(msg) # Send Tweet
                 time.sleep(2)
-                print("msg: " + msg)
+                print(("msg: " + msg))
 
             # Resume Twitter Stream
             self.new_tweet = True
@@ -135,35 +133,37 @@ class Startup: # To get linked with the system that communicate directly with th
             self.writing_tweet = False
             print("end input")
             cond.release()
-
-
-    def TestLoop(self):
-        self.w.minitel.efface()
-        self.w.minitel.definir_vitesse(1200)
-        self.w.WriteString("TEST ON MINITEL")
-        print(self.w.minitel.appeler("TEST", 4))
-        self.w.WaitForAnyInput()
-        print("After wait for any input")
-        while 1:
-            a = 1
             
-    
     def Launch(self): # Pour le moment tout ce fait ici, c'est un peu sale mais je vais tout nettoyer après le salon
 
         # Init wrapper and Twitter API connection
         self.w = Wrapper()
-        print("Sortie wrapper")
         self.w.Connect()
-        print("Sortie connect")
         self.w.DisplayCursor(False)
-        print("Sortie display cursor")
         self.w.WriteLnString(self.w.GetModel()+ " launched successfully")
-        print("Sortie write ln string")
+        #test si connecter wifi, sinon demande de connection
+        self.wifi = Wifi()
+        while self.wifi.IsConnected() != True:
+            self.w.ClearScreen()
+            self.w.WriteLnString("Waiting 10 sec for wifi..")
+            time.sleep(10)
+        #self.wifi.PrintSsids(self.w)
         self.t = FenixTwitter()
-        print("Sortie fenix twitter")
         self.ClearImagesFolder()
-        print("Sortie clear image folder")
-        self.TestLoop()
+        #self.TryConnectTwitter()
+
+        # Init suspend Twitter stream during message writing
+        cond = Condition()
+
+        # Init and launch stream and writing threads
+        self.thread_twitter_get = Thread(None, self.TwitterThreadGetStream, None, (cond,))
+        self.thread_twitter_send = Thread(None, self.TwitterThreadSendMessage, None, (cond,))
+        self.thread_twitter_get.start()
+        self.thread_twitter_send.start()
+
+        # Properly disconnect and close the Minitel
+        self.thread_twitter_get.join()
+        self.thread_twitter_send.join()
         self.w.Disconnect()
         print("disconnected")
 
@@ -200,7 +200,7 @@ class Startup: # To get linked with the system that communicate directly with th
                         keep_img = True
                         break
                 if (keep_img == False):
-                    print("delete file: " + img)
+                    print(("delete file: " + img))
                     self.DeleteImageFile(img)
 
             for url in url_list: # Avoid re-dl existing image
@@ -219,7 +219,7 @@ class Startup: # To get linked with the system that communicate directly with th
     def GetImages(self, url_list):
         for url in url_list:
             try:
-                image = urllib2.urlopen(url)
+                image = urllib.request.urlopen(url)
                 local_file = open("./twitter_images/" + os.path.basename(url), 'wb')
                 local_file.write(image.read())
                 local_file.close()
@@ -228,19 +228,13 @@ class Startup: # To get linked with the system that communicate directly with th
 
     def ClearImagesFolder(self):
         folder = "./twitter_images/"
-        print("In clear images folder")
-        try:
-            for img in os.listdir(folder):
-                print("in for loop")
-                img_path = os.path.join(folder, img)
-                try:
-                    if os.path.isfile(img_path):
-                        os.unlink(img_path)
-                except Exception as e:
-                    raise(e)
-        except Exception as e:
-            print(e)
-        print("end of for leave function")
+        for img in os.listdir(folder):
+            img_path = os.path.join(folder, img)
+            try:
+                if os.path.isfile(img_path):
+                    os.unlink(img_path)
+            except Exception as e:
+                print(e)
 
     def DeleteImageFile(self, img_name):
         folder = "./twitter_images/"
@@ -252,7 +246,7 @@ class Startup: # To get linked with the system that communicate directly with th
             print(e)
 
     def WriteHeader(self):
-        self.w.WriteLnString("Fenix OS v0.2 - #VivaTech Twitter stream")
+        self.w.WriteLnString("Fenix OS v0.3 - #ShowHello Twitter stream")
         self.w.WriteLnString("----------------------------------------")
         self.w.WriteLnString()
 
