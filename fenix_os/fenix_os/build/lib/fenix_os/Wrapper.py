@@ -35,11 +35,11 @@ class Wrapper: # To get linked with the system that communicate directly with th
                 return (1)
         self.minitel.identifier()
         while (self.minitel.capacite['nom'] == "Minitel inconnu"):
-            sleep(2)
+            time.sleep(2)
             self.minitel.identifier()
 
         self.minitel.definir_mode("VIDEOTEX")
-        print(("{} - {}".format(self.minitel.capacite['nom'], self.minitel.capacite['vitesse'])))
+        print("{} - {}".format(self.minitel.capacite['nom'], self.minitel.capacite['vitesse']))
         self.minitel.efface()
         self.minitel.debut_ligne()
 
