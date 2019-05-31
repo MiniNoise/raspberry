@@ -15,6 +15,7 @@ import time
 import sys
 import urllib
 import os
+import pika
 
 """
 Class attribute :
@@ -29,13 +30,34 @@ Class method :
     - SendString(string content, int line, int column)
 """
 
+messageDisplayLimit = 0
+
+def rabbitmq_callback(ch, method, properties, body):
+    self.w.WriteLnString(body)
+    self.w.WriteLnString()
+    self.w.WriteLnString()
+    messageDisplayLimit = 1
+    if messageDisplayLimit >= 12: # No more than 12 latest tweets displayed
+        time.sleep(10)
+        self.lock_input = True
+        self.DisplayTwitterImages()
+        self.lock_input = False
+        break        
+    if messageDisplayLimit % 3 == 0: # 3 tweets per page
+        time.sleep(10)
+        if self.writing_tweet == True:
+            continue
+        self.w.ClearScreen()
+        self.WriteHeader()
+    print(" [x] Received %r" % body)
+
 class Startup: # To get linked with the system that communicate directly with the Minitel
 
     w = None
     t = None
     wifi = None
     thread_twitter_get = None
-    thread_twitter_send = None
+    thread_twitter_send = None  
     new_tweet = False # Used to refresh stream with the new tweet that the user entered
     lock_input = False
     writing_tweet = False
@@ -43,56 +65,65 @@ class Startup: # To get linked with the system that communicate directly with th
     def __init__(self): # Constructor
         self.Launch()
 
+
     def TwitterThreadGetStream(self, cond):
-        while True:
-            self.lock_input = True
-            print("loading all tweets")
-            tweets = self.t.GetTweets()
+        self.w.ClearScreen()
+        self.WriteHeader()
+        connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+        channel = connection.channel()
+        channel.queue_declare(queue=queu_id)
+        channel.basic_consume(queue=queu_id, on_message_callback=rabbitmq_callback, auto_ack=True)
+        channel.start_consuming()
 
-            medias = self.t.GetMediaList()
-            medias = self.UpdateNewMedias(medias)
-            for tmp in medias:
-                print(tmp)
-            self.GetImages(medias)
+        # while True:
+        #     self.lock_input = True
+        #     message = self.t.GetTweets()
+
+        #     print("loading all tweets")
+
+        #     medias = self.t.GetMediaList()
+        #     medias = self.UpdateNewMedias(medias)
+        #     for tmp in medias:
+        #         print(tmp)
+        #     self.GetImages(medias)
             
-            self.lock_input = False
-            self.w.ClearScreen()
-            self.WriteHeader()
-            i = 0;
-            for tmp in tweets:
+        #     self.lock_input = False
 
-                # Lock this Thread() while writing tweet
-                cond.acquire()
-                if self.writing_tweet == True:
-                    cond.wait()
-                    i = 0
-                cond.release()
+        #     i = 0;
+        #     for tmp in tweets:
 
-                # Sending a new tweet to stream
-                if self.new_tweet:
-                    self.new_tweet = False
-                    self.w.ClearScreen()
-                    self.WriteHeader()
-                    self.w.WriteLnString("Refreshing Twitter stream...")
-                    break
+        #         # Lock this Thread() while writing tweet
+        #         cond.acquire()
+        #         if self.writing_tweet == True:
+        #             cond.wait()
+        #             i = 0
+        #         cond.release()
 
-                # Write tweet stream
-                self.w.WriteLnString(tmp)
-                self.w.WriteLnString()
-                self.w.WriteLnString()
-                i += 1
-                if i >= 12: # No more than 12 latest tweets displayed
-                    time.sleep(10)
-                    self.lock_input = True
-                    self.DisplayTwitterImages()
-                    self.lock_input = False
-                    break        
-                if i % 3 == 0: # 3 tweets per page
-                    time.sleep(10)
-                    if self.writing_tweet == True:
-                        continue
-                    self.w.ClearScreen()
-                    self.WriteHeader()
+        #         # Sending a new tweet to stream
+        #         if self.new_tweet:
+        #             self.new_tweet = False
+        #             self.w.ClearScreen()
+        #             self.WriteHeader()
+        #             self.w.WriteLnString("Refreshing Twitter stream...")
+        #             break
+
+        #         # Write tweet stream
+        #         self.w.WriteLnString(tmp)
+        #         self.w.WriteLnString()
+        #         self.w.WriteLnString()
+        #         i += 1
+        #         if i >= 12: # No more than 12 latest tweets displayed
+        #             time.sleep(10)
+        #             self.lock_input = True
+        #             self.DisplayTwitterImages()
+        #             self.lock_input = False
+        #             break        
+        #         if i % 3 == 0: # 3 tweets per page
+        #             time.sleep(10)
+        #             if self.writing_tweet == True:
+        #                 continue
+        #             self.w.ClearScreen()
+        #             self.WriteHeader()
 
     def TwitterThreadSendMessage(self, cond):
         msg = str()

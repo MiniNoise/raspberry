@@ -44,7 +44,7 @@ class FenixTwitter:
             item['text'] = item['text'].replace('\n', '. ')
             if item['text'][0:2] != 'RT':
                 try:
-                    for media in item['entities']['media']:                    
+                    for media in item['entities']['media']:
                         self.media_url.append(media['media_url'])
                 except KeyError, e:
                     e = e
