@@ -29,7 +29,7 @@ class Wifi:
         return
     def IsConnected(self):
         try:
-            r = urllib2.urlopen('https://google.fr', timeout=10)
+            r = urllib2.urlopen('https://www.google.fr', timeout=10)
             return True
         except:
             return False
